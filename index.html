@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ant Feast</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#fff8ee;--fg:#2b2118;--mut:#d8ccbb;--card:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1a16;--fg:#f3ece2;--mut:#4a443c;--card:#2a2621}}
+:root[data-theme="dark"]{--bg:#1d1a16;--fg:#f3ece2;--mut:#4a443c;--card:#2a2621}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px;touch-action:manipulation;user-select:none}
+header{display:flex;justify-content:space-between;align-items:center;width:min(92vw,380px);font-weight:600}
+button,label.btn,select{font:inherit;cursor:pointer}.row{display:flex;gap:8px;align-items:center}
+.btn{background:var(--card);color:var(--fg);border:1px solid var(--mut);border-radius:10px;padding:6px 12px}
+.hint{font-size:13px;opacity:.75;width:min(92vw,380px);text-align:center}
+#board{display:grid;gap:1px;width:min(78vw,340px);margin:24px 0;background:var(--mut);padding:1px;border-radius:6px}
+#board div{aspect-ratio:1;background:var(--bg)}
+#board div.on{transition:background .15s}
+#slots{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:min(92vw,380px)}
+.slot{width:52px;height:44px;border:2px dashed var(--mut);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;text-shadow:0 0 3px #000}
+#cols{display:flex;gap:10px;align-items:flex-start;justify-content:center}
+.col{display:flex;flex-direction:column;gap:6px;align-items:center}
+.tile{width:56px;height:44px;border:0;border-radius:10px;font-weight:700;font-size:17px;color:#fff;text-shadow:0 0 3px #000}
+.tile.lock{background:var(--mut)!important;color:var(--fg);text-shadow:none;cursor:default;opacity:.7}
+.more{font-size:12px;opacity:.6}
+#ants{position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:5}
+.ant{position:fixed;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:2px solid #222;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;transition-property:transform;transition-timing-function:ease-in-out}
+#ov{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:9}
+#ov .box{background:var(--card);color:var(--fg);border-radius:16px;padding:22px 26px;text-align:center;display:flex;flex-direction:column;gap:12px}
+</style>
+</head>
+<body>
+<header><span id="title"></span><button class="btn" id="restart">↻ Заново</button></header>
+<div class="row" id="dev"><label class="btn">📂 Мої рівні (JSON)<input id="file" type="file" accept=".json" multiple hidden></label><select id="diff" class="btn"><option value="easy">легкий</option><option value="mid">середній</option><option value="hard">хард</option></select></div>
+<div class="hint">Тапай плитку зверху колонки. Мурахи ідуть до пікселів її кольору і їдять картинку знизу вгору: доступні лише ті, під якими вже порожньо.</div>
+<div id="board"></div>
+<div id="slots"></div>
+<div id="cols"></div>
+<div id="ants"></div>
+<div id="ov"><div class="box"><div id="msg" style="font-size:20px;font-weight:700"></div><div id="sub"></div><button class="btn" id="act"></button></div></div>
+
+<script>
+const PAL={B:'#8B5A2B',G:'#4CAF50',R:'#E53935',Y:'#FFD54F',P:'#7E57C2',U:'#29B6F6',O:'#FF9800',K:'#EC407A'};
+const ORD=['R','Y','G','U','P','O'];
+function rng(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+// Картинка: кольорові плями (Вороного) у заокругленій формі
+function blobs(n,nc,seed){
+  const r=rng(seed),cs=ORD.slice(0,nc),sd=[];
+  for(let k=0;k<nc+Math.floor(n/3);k++)sd.push({x:r()*n,y:r()*n,c:cs[k%nc]});
+  const m=[];
+  for(let y=0;y<n;y++){let s='';for(let x=0;x<n;x++){
+    const dx=(x-(n-1)/2)/(n/2),dy=(y-(n-1)/2)/(n/2);
+    if(Math.abs(dx)**3+Math.abs(dy)**3>1){s+='.';continue}
+    let b=sd[0],bd=1e9;for(const q of sd){const d=(q.x-x)**2+(q.y-y)**2;if(d<bd){bd=d;b=q}}
+    s+=b.c}m.push(s)}
+  return m;
+}
+// 10 рівнів: розмір сітки, кольори, колонки ростуть; слотів менше; кожен 5-й = хард
+function mk(i){
+  const hard=(i+1)%5===0;
+  return{hard,type:hard?'ХАРД':(i<3?'легкий':'середній'),
+    size:Math.min(20,7+Math.floor(i*1.1)+(hard?2:0)),
+    nc:Math.min(6,2+Math.floor(i/2)+(hard?1:0)),
+    slots:Math.max(hard?3:4,6-Math.floor(i/2)-(hard?1:0)),
+    cols:Math.min(5,3+Math.floor(i/3)+(hard?1:0)),
+    min:2,max:4+Math.floor(i/2),seed:i*7+3};
+}
+let LEVELS=Array.from({length:10},(_,i)=>mk(i));
+const N4=[[1,0],[-1,0],[0,1],[0,-1]];
+let CUR=PAL,lvl=0,S,cellEls=[],slotEls=[];
+const $=id=>document.getElementById(id);
+
+// Піксель доступний, якщо він у нижньому ряду або під ним порожньо (їмо знизу вгору)
+function acc(g,x,y){return !!g[y][x]&&(y===g.length-1||!g[y+1][x])}
+
+// Генератор: симулюємо реальну партію, тому рівень гарантовано розв'язний
+function build(L){
+  const r=rng(L.seed),map=L.map||blobs(L.size,L.nc,L.seed),H=map.length,W=map[0].length;
+  const g=map.map(s=>[...s].map(ch=>ch==='.'?null:ch));
+  let left=g.flat().filter(Boolean).length;const total=left,seq=[],f=Math.max(1,total/250),mn=Math.round(L.min*f),mx=Math.round(L.max*f);
+  while(left>0){
+    const cells=[];for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(acc(g,x,y))cells.push([x,y]);
+    const cs=[...new Set(cells.map(([x,y])=>g[y][x]))],c=cs[Math.floor(r()*cs.length)];
+    const mine=cells.filter(([x,y])=>g[y][x]===c).sort(()=>r()-.5);
+    const k=Math.min(mine.length,mn+Math.floor(r()*(mx-mn+1)));
+    for(let i=0;i<k;i++)g[mine[i][1]][mine[i][0]]=null;
+    seq.push({c,n:k});left-=k;
+  }
+  const cols=Array.from({length:L.cols},()=>[]);
+  seq.forEach(t=>cols[Math.floor(r()*L.cols)].push(t));
+  return{W,H,cols,total,g:map.map(s=>[...s].map(ch=>ch==='.'?null:ch))};
+}
+
+function start(i){
+  lvl=i;const L=LEVELS[i],b=build(L);CUR=L.pal||PAL;
+  S={g:b.g,W:b.W,H:b.H,cols:b.cols,slots:Array(L.slots).fill(null),res:new Set(),ants:0,left:b.total,over:false};
+  $('title').textContent=`Рівень ${i+1}/${LEVELS.length} · ${L.type} · ${b.W}×${b.H}${L.name?' · '+L.name.replace(/\.json$/,''):''}`;
+  $('ov').style.display='none';$('ants').innerHTML='';
+  const bd=$('board');bd.innerHTML='';bd.style.gridTemplateColumns=`repeat(${S.W},1fr)`;cellEls=[];
+  for(let y=0;y<S.H;y++)for(let x=0;x<S.W;x++){const d=document.createElement('div');const c=S.g[y][x];if(c){d.style.background=CUR[c];d.className='on'}cellEls.push(d);bd.appendChild(d)}
+  const sl=$('slots');sl.innerHTML='';slotEls=[];
+  for(let k=0;k<L.slots;k++){const d=document.createElement('div');d.className='slot';slotEls.push(d);sl.appendChild(d)}
+  renderCols();renderSlots();
+}
+function renderCols(){
+  const el=$('cols');el.innerHTML='';
+  S.cols.forEach((col,ci)=>{
+    const d=document.createElement('div');d.className='col';
+    col.slice(0,3).forEach((t,k)=>{const b=document.createElement('button');b.className='tile'+(k?' lock':'');
+      b.textContent=k?'?':t.n;if(!k){b.style.background=CUR[t.c];b.onclick=()=>tap(ci)}d.appendChild(b)});
+    if(col.length>3){const m=document.createElement('div');m.className='more';m.textContent='+'+(col.length-3);d.appendChild(m)}
+    el.appendChild(d)});
+}
+function renderSlots(){
+  S.slots.forEach((t,i)=>{const e=slotEls[i];e.style.background=t?CUR[t.c]:'transparent';e.style.borderStyle=t?'solid':'dashed';e.textContent=t?t.n:''});
+}
+function tap(ci){
+  if(S.over)return;const col=S.cols[ci];if(!col.length)return;
+  const si=S.slots.indexOf(null);if(si<0)return;
+  S.slots[si]=col.shift();renderCols();renderSlots();dispatch();
+}
+function dispatch(){
+  S.slots.forEach((t,i)=>{
+    if(!t||t.n<=0)return;
+    const list=[];
+    for(let y=0;y<S.H;y++)for(let x=0;x<S.W;x++)if(S.g[y][x]===t.c&&!S.res.has(y*S.W+x)&&acc(S.g,x,y))list.push([x,y]);
+    const k=Math.min(t.n,list.length);
+    for(let j=0;j<k;j++)sendAnt(i,list[j],j,t.c);
+    t.n-=k;if(t.n<=0)S.slots[i]=null;
+  });
+  renderSlots();check();
+}
+// Мураха ходить по порожніх клітинках (і поза картинкою) до клітинки над своїм пікселем
+function route(cx,tx,ty){
+  const W=S.W,H=S.H,id=(x,y)=>(y+1)*(W+2)+(x+1),free=(x,y)=>x<0||y<0||x>=W||y>=H||!S.g[y][x];
+  const goal=[tx,ty+1],prev=new Map(),q=[[cx,H]];prev.set(id(cx,H),null);
+  while(q.length){const [x,y]=q.shift();
+    if(x===goal[0]&&y===goal[1]){const out=[];let c=[x,y];while(c){out.push(c);c=prev.get(id(c[0],c[1]))}return out.reverse()}
+    for(const [dx,dy] of N4){const a=x+dx,b=y+dy;if(a<-1||b<-1||a>W||b>H||prev.has(id(a,b))||!free(a,b))continue;prev.set(id(a,b),[x,y]);q.push([a,b])}}
+  return null;
+}
+const SPEED=0.17; // px за мс: менше = повільніше
+function sendAnt(si,[x,y],j,c){
+  S.res.add(y*S.W+x);S.ants++;
+  const a=slotEls[si].getBoundingClientRect(),c0=cellEls[0].getBoundingClientRect(),c1=cellEls[1].getBoundingClientRect(),cw=cellEls[S.W].getBoundingClientRect();
+  const ox=c0.left+c0.width/2,oy=c0.top+c0.height/2,sx=c1.left-c0.left,sy=cw.top-c0.top;
+  const P=(i,k)=>[ox+i*sx,oy+k*sy],st=[a.left+a.width/2,a.top+a.height/2];
+  const cx=Math.max(0,Math.min(S.W-1,Math.round((st[0]-ox)/sx)));
+  const cells=route(cx,x,y)||[];
+  const pts=[st,...cells.map(([i,k])=>P(i,k)),P(x,y)];
+  const cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]));
+  const total=cum[cum.length-1]||1;
+  const e=document.createElement('div');e.className='ant';e.style.background=CUR[c];e.style.left=st[0]+'px';e.style.top=st[1]+'px';
+  $('ants').appendChild(e);
+  const frames=pts.map((p,i)=>({transform:`translate(${p[0]-st[0]}px,${p[1]-st[1]}px)`,offset:cum[i]/total}));
+  const an=e.animate(frames,{duration:total/SPEED,delay:j*220,easing:'linear',fill:'both'});
+  an.onfinish=()=>{
+    e.remove();S.g[y][x]=null;S.res.delete(y*S.W+x);S.ants--;S.left--;
+    const cell=cellEls[y*S.W+x];cell.style.background='';cell.className='';
+    if(!S.over)dispatch();
+  };
+}
+function check(){
+  if(S.over||S.ants>0)return;
+  if(S.left<=0)return end(true);
+  if(!(S.slots.includes(null)&&S.cols.some(c=>c.length)))end(false);
+}
+function end(win){
+  S.over=true;const last=lvl===LEVELS.length-1;if(win)saveProg(last?0:lvl+1);
+  $('msg').textContent=win?'Все з\'їдено! 🎉':'Слоти забиті 😵';
+  $('sub').textContent=win?(last?'Це останній рівень прототипу.':''):'Спробуй іншу послідовність.';
+  const b=$('act');b.textContent=win?(last?'Спочатку':'Далі'):'Ще раз';
+  b.onclick=()=>start(win?(last?0:lvl+1):lvl);
+  $('ov').style.display='flex';
+}
+const DIFF={easy:{type:'легкий',slots:6,cols:3,min:2,max:5},mid:{type:'середній',slots:5,cols:4,min:2,max:6},hard:{type:'ХАРД',slots:3,cols:5,min:3,max:8}};
+let RAW=[];
+const conv=d=>{const pal={};d.palette.forEach((h,i)=>pal[String.fromCharCode(97+i)]=h);
+  return{pal,map:d.pixels.map(r=>r.map(v=>v<0?'.':String.fromCharCode(97+v)).join(''))}};
+function apply(){LEVELS=RAW.map((r,i)=>({...DIFF[r.diff||$('diff').value],...r,seed:i+1}));start(0)}
+$('file').onchange=async e=>{
+  const arr=[...e.target.files].sort((a,b)=>a.name.localeCompare(b.name));RAW=[];
+  for(const f of arr){try{RAW.push({...conv(JSON.parse(await f.text())),name:f.name})}catch(err){alert('Не вдалося прочитати '+f.name)}}
+  if(RAW.length)apply();
+};
+$('diff').onchange=()=>{if(RAW.length)apply()};
+const tg=window.Telegram&&Telegram.WebApp;
+if(tg){try{tg.ready();tg.expand()}catch(e){}}
+if(!location.search.includes('dev'))$('dev').style.display='none';
+function saveProg(n){try{if(tg&&tg.initData&&tg.CloudStorage)tg.CloudStorage.setItem('lvl',String(n));else localStorage.setItem('lvl',String(n))}catch(e){}}
+function loadProg(){return new Promise(res=>{try{
+  if(tg&&tg.initData&&tg.CloudStorage){tg.CloudStorage.getItem('lvl',(e,v)=>res(+v||0));return}
+  res(+localStorage.getItem('lvl')||0)}catch(e){res(0)}})}
+async function init(){
+  try{const man=await(await fetch('levels/index.json')).json();RAW=[];
+    for(const m of man)RAW.push({...conv(await(await fetch('levels/'+m.file)).json()),name:m.file,diff:m.difficulty});
+    apply();const p=await loadProg();if(p>0&&p<LEVELS.length)start(p);
+  }catch(e){start(0)}
+}
+$('restart').onclick=()=>start(lvl);
+init();
+</script>
+</body>
+</html>

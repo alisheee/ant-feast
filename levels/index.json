@@ -1,0 +1,14 @@
+[
+ {
+  "file": "01_apple.json",
+  "difficulty": "easy"
+ },
+ {
+  "file": "02_pizza.json",
+  "difficulty": "mid"
+ },
+ {
+  "file": "03_turtle.json",
+  "difficulty": "hard"
+ }
+]
