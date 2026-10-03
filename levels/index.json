@@ -1,14 +1,7 @@
 [
- {
-  "file": "01_apple.json",
-  "difficulty": "easy"
- },
- {
-  "file": "02_pizza.json",
-  "difficulty": "mid"
- },
- {
-  "file": "03_turtle.json",
-  "difficulty": "hard"
- }
+  {"id":"fruits","name":"Фрукти","emoji":"🍎","levels":[{"file":"01_apple.json","difficulty":"easy"}]},
+  {"id":"fastfood","name":"Фастфуд","emoji":"🍕","levels":[{"file":"02_pizza.json","difficulty":"mid"}]},
+  {"id":"animals","name":"Тварини","emoji":"🐢","levels":[{"file":"03_turtle.json","difficulty":"hard"}]},
+  {"id":"berries","name":"Ягоди","emoji":"🍓","levels":[]},
+  {"id":"architecture","name":"Архітектура","emoji":"🏰","levels":[]}
 ]
