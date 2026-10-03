@@ -133,11 +133,29 @@ function dispatch(){
     if(!t||t.n<=0)return;
     const list=[];
     for(let y=0;y<S.H;y++)for(let x=0;x<S.W;x++)if(S.g[y][x]===t.c&&!S.res.has(y*S.W+x)&&acc(S.g,x,y))list.push([x,y]);
+    // пріоритет: пікселі, до яких мурасі найближче йти (а не просто верхні)
+    const D=dists(slotCx(i)),cost=([x,y])=>Math.min(...N4.map(([dx,dy])=>D.get(key(x+dx,y+dy))??1e9));
+    list.sort((a,b)=>cost(a)-cost(b));
     const k=Math.min(t.n,list.length);
     for(let j=0;j<k;j++)sendAnt(i,list[j],j,t.c);
     t.n-=k;if(t.n<=0)S.slots[i]=null;
   });
   renderSlots();check();
+}
+const key=(x,y)=>(y+1)*(S.W+2)+(x+1);
+function slotCx(si){
+  const a=slotEls[si].getBoundingClientRect(),c0=cellEls[0].getBoundingClientRect(),c1=cellEls[1].getBoundingClientRect();
+  return Math.max(0,Math.min(S.W-1,Math.round((a.left+a.width/2-c0.left-c0.width/2)/(c1.left-c0.left))));
+}
+// відстані (у кроках) від старту мурахи до кожної вільної клітинки
+function dists(cx){
+  const W=S.W,H=S.H,D=new Map([[key(cx,H),0]]),q=[[cx,H]];
+  while(q.length){const [x,y]=q.shift(),d=D.get(key(x,y));
+    for(const [dx,dy] of N4){const a=x+dx,b=y+dy;
+      if(a<-1||b<-1||a>W||b>H||D.has(key(a,b)))continue;
+      if(a>=0&&b>=0&&a<W&&b<H&&S.g[b][a])continue;
+      D.set(key(a,b),d+1);q.push([a,b])}}
+  return D;
 }
 // Мураха ходить по порожніх клітинках і навколо картинки до клітинки поруч зі своїм пікселем (з будь-якого боку)
 function route(cx,tx,ty){
