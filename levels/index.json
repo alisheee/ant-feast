@@ -1,7 +1,137 @@
 [
-  {"id":"fruits","name":"Фрукти","emoji":"🍎","levels":[{"file":"01_apple.json","difficulty":"easy"}]},
-  {"id":"fastfood","name":"Фастфуд","emoji":"🍕","levels":[{"file":"02_pizza.json","difficulty":"mid"}]},
-  {"id":"animals","name":"Тварини","emoji":"🐢","levels":[{"file":"03_turtle.json","difficulty":"hard"}]},
-  {"id":"berries","name":"Ягоди","emoji":"🍓","levels":[]},
-  {"id":"architecture","name":"Архітектура","emoji":"🏰","levels":[]}
+ {
+  "id": "fruits",
+  "name": "Фрукти",
+  "emoji": "🍎",
+  "levels": [
+   {
+    "file": "01_apple.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "lemon.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "orange.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "melon.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "pineapple.json",
+    "difficulty": "hard"
+   }
+  ]
+ },
+ {
+  "id": "fastfood",
+  "name": "Фастфуд",
+  "emoji": "🍕",
+  "levels": [
+   {
+    "file": "fries.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "hotdog.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "burger.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "02_pizza.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "donut.json",
+    "difficulty": "hard"
+   }
+  ]
+ },
+ {
+  "id": "animals",
+  "name": "Тварини",
+  "emoji": "🐢",
+  "levels": [
+   {
+    "file": "cat.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "fish.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "frog.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "butterfly.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "03_turtle.json",
+    "difficulty": "hard"
+   }
+  ]
+ },
+ {
+  "id": "berries",
+  "name": "Ягоди",
+  "emoji": "🍓",
+  "levels": [
+   {
+    "file": "strawberry.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "cherries.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "blueberries.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "grapes.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "raspberry.json",
+    "difficulty": "hard"
+   }
+  ]
+ },
+ {
+  "id": "architecture",
+  "name": "Архітектура",
+  "emoji": "🏰",
+  "levels": [
+   {
+    "file": "house.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "lighthouse.json",
+    "difficulty": "easy"
+   },
+   {
+    "file": "windmill.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "castle.json",
+    "difficulty": "mid"
+   },
+   {
+    "file": "eiffel.json",
+    "difficulty": "hard"
+   }
+  ]
+ }
 ]
