@@ -35,6 +35,9 @@ button{font:inherit;cursor:pointer;color:inherit}
 .tile{width:56px;height:44px;border:0;border-radius:10px;font-weight:700;font-size:17px;color:#fff;text-shadow:0 0 3px #000}
 .tile.lock{background:var(--mut)!important;color:var(--fg);text-shadow:none;cursor:default;opacity:.7}
 .more{font-size:12px;opacity:.6}
+.warn{border:1px solid #e0a800;border-radius:10px;padding:8px 10px;width:min(88vw,360px);font-size:13px;text-align:left}
+.ctl{display:flex;align-items:center;gap:8px;width:min(92vw,380px)}.ctl input{flex:1}
+#pv{display:none;max-width:92vw;border:1px solid var(--mut);border-radius:6px}
 #ants{position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:5}
 .ant{position:fixed;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;border:2px solid #222;box-sizing:border-box}
 .ant::after{content:'';position:absolute;left:3px;top:-6px;width:6px;height:6px;border-radius:50%;background:#222}
@@ -50,6 +53,7 @@ button{font:inherit;cursor:pointer;color:inherit}
   <div class="sub" id="hsub"></div>
   <button class="play" id="play">▶ Грати</button>
   <button class="btn" id="tocat">📚 Каталог</button>
+  <button class="btn" id="toup">📷 Своє фото</button>
 </div>
 <div id="catalog" class="screen">
   <div class="bar"><button class="btn" id="b1">←</button><span>Каталог</span><span></span></div>
@@ -63,6 +67,17 @@ button{font:inherit;cursor:pointer;color:inherit}
   <div class="bar"><button class="btn" id="gback">←</button><span id="title"></span><button class="btn" id="restart">↻</button></div>
   <div class="hint">Тапай плитку зверху колонки. Мурахи йдуть до пікселів її кольору. Їсти можна лише ті, що з краю картинки або поруч із порожнім місцем.</div>
   <div id="board"></div><div id="slots"></div><div id="cols"></div>
+</div>
+<div id="upload" class="screen">
+  <div class="bar"><button class="btn" id="b3">←</button><span>Своє фото</span><span></span></div>
+  <div class="warn">⚠️ Якщо на фото багато кольорів, а сітка мала або кольорів мало, зображення сильно стисне й вийде клякса. Найкраще: яскравий предмет на однотонному фоні, сітка 12–24 і 4–6 кольорів. Дивись прев'ю й підбирай.</div>
+  <label class="btn">📂 Вибрати фото<input type="file" id="pf" accept="image/*" hidden></label>
+  <canvas id="pv"></canvas>
+  <div class="ctl">Розмір сітки <b id="szv">16</b><input type="range" id="sz" min="8" max="48" value="16"></div>
+  <div class="ctl">Кольорів <b id="ncv">5</b><input type="range" id="nc" min="2" max="10" value="5"></div>
+  <div class="hint" id="pinfo"></div>
+  <button class="play" id="psave" disabled style="font-size:18px;padding:10px 26px">Зберегти в «Особисте»</button>
+  <div class="hint">🔒 Фото нікуди не завантажується: обробка відбувається на твоєму пристрої.</div>
 </div>
 <div id="ants"></div>
 <div id="ov"><div class="box"><div id="msg" style="font-size:20px;font-weight:700"></div><div id="sub2"></div><button class="btn" id="act"></button><button class="btn" id="act2">Меню</button></div></div>
@@ -210,9 +225,10 @@ const curCat=()=>CATS.find(c=>c.id===PROG.cat&&c.levels.length)||CATS.find(c=>c.
 const conv=d=>{const pal={};d.palette.forEach((h,i)=>pal[String.fromCharCode(97+i)]=h);
   return{pal,map:d.pixels.map(r=>r.map(v=>v<0?'.':String.fromCharCode(97+v)).join(''))}};
 async function fetchLevel(c,i){
-  const k=c.id+i;
-  if(!CACHE[k]){const m=c.levels[i],d=await(await fetch('levels/'+m.file)).json();
-    CACHE[k]={...DIFF[m.difficulty||'easy'],...conv(d),seed:i*7+c.id.length}}
+  const m=c.levels[i],k=c.id+(m.pid||i);
+  if(!CACHE[k]){
+    if(c.personal)CACHE[k]={...DIFF[autoDiff(m.data)],...conv(m.data),seed:i*7+3};
+    else{const d=await(await fetch('levels/'+m.file)).json();CACHE[k]={...DIFF[m.difficulty||'easy'],...conv(d),seed:i*7+c.id.length}}}
   return CACHE[k];
 }
 async function playLevel(c,i){
@@ -229,15 +245,22 @@ function renderHome(){
 function renderCatalog(){
   const el=$('cats');el.innerHTML='';
   CATS.forEach(c=>{const n=c.levels.length,d=doneOf(c),b=document.createElement('button');
-    b.className='card'+(n?'':' soon');
-    b.innerHTML=`<span class="em">${c.emoji}</span><span class="ct"><b>${c.name}</b><i><u style="width:${n?d/n*100:0}%"></u></i></span><span>${n?d+'/'+n:'скоро'}</span>`;
-    if(n)b.onclick=()=>openCat(c);el.appendChild(b)});
+    b.className='card'+(n||c.personal?'':' soon');
+    b.innerHTML=`<span class="em">${c.emoji}</span><span class="ct"><b>${c.name}</b><i><u style="width:${n&&!c.personal?d/n*100:0}%"></u></i></span><span>${c.personal?n+'/'+MAXP:n?d+'/'+n:'скоро'}</span>`;
+    if(n||c.personal)b.onclick=()=>{delMode=false;openCat(c)};el.appendChild(b)});
 }
+let delMode=false;
 function openCat(c){
-  $('cpt').textContent=c.emoji+' '+c.name;const el=$('lvls'),d=doneOf(c);el.innerHTML='';
+  $('cpt').textContent=c.emoji+' '+c.name;const el=$('lvls'),d=c.personal?c.levels.length:doneOf(c);el.innerHTML='';
   c.levels.forEach((_,i)=>{const b=document.createElement('button');
-    b.className='lv'+(i<d?' done':i===d?' cur':' lock');b.textContent=i<=d?i+1:'🔒';
-    if(i<=d)b.onclick=()=>playLevel(c,i);el.appendChild(b)});
+    b.className='lv'+(c.personal?'':i<d?' done':i===d?' cur':' lock');b.textContent=i<=d||c.personal?i+1:'🔒';
+    if(c.personal&&delMode){b.textContent='🗑';b.onclick=async()=>{if(confirm('Видалити це фото?'))await delPersonal(i)}}
+    else if(i<=d||c.personal)b.onclick=()=>playLevel(c,i);
+    el.appendChild(b)});
+  if(c.personal){
+    if(c.levels.length<MAXP){const a=document.createElement('button');a.className='lv';a.textContent='＋';a.onclick=openUpload;el.appendChild(a)}
+    if(c.levels.length){const t=document.createElement('button');t.className='btn';t.style.gridColumn='1/-1';t.textContent=delMode?'Готово':'🗑 Видалити фото';t.onclick=()=>{delMode=!delMode;openCat(c)};el.appendChild(t)}
+  }
   show('catpage');
 }
 $('play').onclick=()=>{const c=curCat();playLevel(c,Math.min(doneOf(c),c.levels.length-1))};
@@ -245,10 +268,106 @@ $('tocat').onclick=()=>{renderCatalog();show('catalog')};
 $('b1').onclick=goHome;$('b2').onclick=()=>{renderCatalog();show('catalog')};
 $('gback').onclick=goHome;$('act2').onclick=goHome;
 $('restart').onclick=()=>playLevel(cat,idx);
+// ---- особисті фото: сховище, перетворення фото на піксельну сітку ----
+const MAXP=10,TOL=40;
+const kvSet=(k,v)=>new Promise(r=>{try{useTg()?tg.CloudStorage.setItem(k,v,()=>r()):(localStorage.setItem(k,v),r())}catch(e){r()}});
+const kvGet=k=>new Promise(r=>{try{useTg()?tg.CloudStorage.getItem(k,(e,v)=>r(v||null)):r(localStorage.getItem(k))}catch(e){r(null)}});
+const kvDel=k=>new Promise(r=>{try{useTg()?tg.CloudStorage.removeItem(k,()=>r()):(localStorage.removeItem(k),r())}catch(e){r()}});
+const enc=d=>`${d.w},${d.h};${d.palette.map(h=>h.slice(1)).join('|')};${d.pixels.flat().map(v=>v<0?'.':v.toString(36)).join('')}`;
+function dec(s){const[a,b,c]=s.split(';'),[w,h]=a.split(',').map(Number),px=[...c].map(ch=>ch==='.'?-1:parseInt(ch,36)),pixels=[];
+  for(let y=0;y<h;y++)pixels.push(px.slice(y*w,(y+1)*w));return{w,h,palette:b.split('|').map(x=>'#'+x),pixels}}
+const autoDiff=d=>{const m=Math.max(d.w,d.h),c=d.palette.length;return c<=4&&m<=12?'easy':c<=6&&m<=20?'mid':'hard'};
+const persCat=()=>CATS.find(c=>c.personal);
+async function loadPersonal(){
+  const P={id:'personal',name:'Особисте',emoji:'📷',personal:true,levels:[]};
+  try{for(const id of JSON.parse(await kvGet('pl')||'[]')){const s=await kvGet('p_'+id);if(s)P.levels.push({pid:id,data:dec(s)})}}catch(e){}
+  CATS.unshift(P);
+}
+async function savePersonal(){
+  const P=persCat();
+  if(P.levels.length>=MAXP)return alert('Ліміт: '+MAXP+' фото. Видали щось в «Особисте».');
+  const id=Date.now().toString(36),s=enc(RES);
+  if(s.length>4000)return alert('Завелике фото. Зменш розмір сітки.');
+  await kvSet('p_'+id,s);await kvSet('pl',JSON.stringify(P.levels.map(l=>l.pid).concat(id)));
+  P.levels.push({pid:id,data:RES});delMode=false;openCat(P);
+}
+async function delPersonal(i){
+  const P=persCat(),id=P.levels[i].pid;await kvDel('p_'+id);P.levels.splice(i,1);
+  await kvSet('pl',JSON.stringify(P.levels.map(l=>l.pid)));if(!P.levels.length)delMode=false;openCat(P);
+}
+function kmeans(pts,k){
+  const dist=(a,b)=>(a[0]-b[0])**2+(a[1]-b[1])**2+(a[2]-b[2])**2;
+  const u=[...new Map(pts.map(p=>{const r=p.map(Math.round);return[r.join(),r]})).values()];
+  k=Math.min(k,u.length);
+  const C=[[0,1,2].map(i=>pts.reduce((a,p)=>a+p[i],0)/pts.length)];
+  while(C.length<k){let best=u[0],bd=-1;for(const p of u){const dd=Math.min(...C.map(c=>dist(p,c)));if(dd>bd){bd=dd;best=p}}C.push(best.slice())}
+  let lab=[];
+  for(let it=0;it<12;it++){
+    lab=pts.map(p=>{let bi=0,bd=1e18;C.forEach((c,i)=>{const dd=dist(p,c);if(dd<bd){bd=dd;bi=i}});return bi});
+    C.forEach((c,i)=>{const m=pts.filter((_,j)=>lab[j]===i);if(m.length)C[i]=[0,1,2].map(t=>m.reduce((a,p)=>a+p[t],0)/m.length)});
+  }
+  return{lab,C:C.map(c=>c.map(Math.round))};
+}
+function clean(g){
+  const o=g.map(r=>r.slice());
+  g.forEach((row,y)=>row.forEach((c,x)=>{if(c<0)return;
+    const nb=N4.map(([dx,dy])=>g[y+dy]?.[x+dx]).filter(v=>v>=0);
+    if(nb.length&&!nb.includes(c)){const n={};nb.forEach(v=>n[v]=(n[v]||0)+1);o[y][x]=+Object.keys(n).sort((a,b)=>n[b]-n[a])[0]}}));
+  return o;
+}
+// фото -> {w,h,palette,pixels}; фон прибирається автоматично (прозорість або однотонний фон)
+function pix(img,size,nc){
+  const sc=Math.min(1,256/Math.max(img.naturalWidth,img.naturalHeight)),w=Math.max(1,Math.round(img.naturalWidth*sc)),h=Math.max(1,Math.round(img.naturalHeight*sc));
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+  const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0,w,h);
+  const d=cx.getImageData(0,0,w,h).data,N=w*h,mask=new Uint8Array(N);
+  let hasA=false;for(let i=0;i<N;i++)if(d[i*4+3]<250){hasA=true;break}
+  if(hasA){for(let i=0;i<N;i++)mask[i]=d[i*4+3]>128?1:0}
+  else{
+    const cs=[0,w-1,(h-1)*w,N-1],bg=[0,1,2].map(k=>{const v=cs.map(i=>d[i*4+k]).sort((a,b)=>a-b);return(v[1]+v[2])/2});
+    const sim=i=>Math.abs(d[i*4]-bg[0])+Math.abs(d[i*4+1]-bg[1])+Math.abs(d[i*4+2]-bg[2])<=TOL*1.5+10;
+    const isbg=new Uint8Array(N),q=[],push=i=>{if(!isbg[i]&&sim(i)){isbg[i]=1;q.push(i)}};
+    for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
+    while(q.length){const i=q.pop(),x=i%w,y=(i/w)|0;if(x>0)push(i-1);if(x<w-1)push(i+1);if(y>0)push(i-w);if(y<h-1)push(i+w)}
+    for(let i=0;i<N;i++)mask[i]=isbg[i]?0:1;
+  }
+  let x0=w,y0=h,x1=-1,y1=-1;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(mask[y*w+x]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+  if(x1<0)return null;
+  const bw=x1-x0+1,bh=y1-y0+1,gw=bw>=bh?size:Math.max(1,Math.round(size*bw/bh)),gh=bw>=bh?Math.max(1,Math.round(size*bh/bw)):size;
+  const cells=[],pts=[];
+  for(let gy=0;gy<gh;gy++)for(let gx=0;gx<gw;gx++){
+    const xs=Math.floor(x0+gx*bw/gw),xe=Math.max(xs+1,Math.floor(x0+(gx+1)*bw/gw)),ys=Math.floor(y0+gy*bh/gh),ye=Math.max(ys+1,Math.floor(y0+(gy+1)*bh/gh));
+    let r=0,g=0,b=0,n=0,t=0;
+    for(let y=ys;y<ye&&y<h;y++)for(let x=xs;x<xe&&x<w;x++){t++;const i=y*w+x;if(mask[i]){n++;r+=d[i*4];g+=d[i*4+1];b+=d[i*4+2]}}
+    if(t&&n/t>0.5){cells.push(pts.length);pts.push([r/n,g/n,b/n])}else cells.push(-1);
+  }
+  if(!pts.length)return null;
+  const{lab,C}=kmeans(pts,nc),used=[...new Set(lab)].sort((a,b)=>a-b),mp=new Map(used.map((o,i)=>[o,i]));
+  let grid=[];for(let gy=0;gy<gh;gy++){const row=[];for(let gx=0;gx<gw;gx++){const c=cells[gy*gw+gx];row.push(c<0?-1:mp.get(lab[c]))}grid.push(row)}
+  return{w:gw,h:gh,palette:used.map(i=>'#'+C[i].map(v=>Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0')).join('')),pixels:clean(grid)};
+}
+let IMG=null,RES=null;
+function openUpload(){$('pf').value='';IMG=null;RES=null;$('pv').style.display='none';$('psave').disabled=true;$('pinfo').textContent='';show('upload')}
+function upd(){
+  $('szv').textContent=$('sz').value;$('ncv').textContent=$('nc').value;if(!IMG)return;
+  const d=pix(IMG,+$('sz').value,+$('nc').value);
+  if(!d){RES=null;$('psave').disabled=true;$('pv').style.display='none';$('pinfo').textContent='Не знайшла предмет на фото. Спробуй інше.';return}
+  RES=d;const cs=Math.max(4,Math.min(14,Math.floor(300/Math.max(d.w,d.h)))),cv=$('pv'),ctx=cv.getContext('2d');
+  cv.width=d.w*cs;cv.height=d.h*cs;cv.style.display='block';
+  d.pixels.forEach((r,y)=>r.forEach((v,x)=>{if(v>=0){ctx.fillStyle=d.palette[v];ctx.fillRect(x*cs,y*cs,cs-1,cs-1)}}));
+  const n=d.pixels.flat().filter(v=>v>=0).length;
+  $('pinfo').textContent=`${d.w}×${d.h}, кольорів: ${d.palette.length}, пікселів: ${n}, складність: ${{easy:'легка',mid:'середня',hard:'хард'}[autoDiff(d)]}`+(n>900?'. Гра вийде дуже довгою.':'');
+  $('psave').disabled=false;
+}
+$('toup').onclick=openUpload;$('b3').onclick=goHome;$('psave').onclick=savePersonal;
+$('sz').oninput=upd;$('nc').oninput=upd;
+$('pf').onchange=e=>{const f=e.target.files[0];if(!f)return;const im=new Image();im.onload=()=>{IMG=im;upd()};im.onerror=()=>alert('Не вдалося відкрити фото');im.src=URL.createObjectURL(f)};
+
 (async()=>{
   try{CATS=await(await fetch('levels/index.json')).json()}
   catch(e){document.body.textContent='Не вдалося завантажити рівні';return}
-  await loadProg();renderHome();show('home');
+  await loadProg();await loadPersonal();renderHome();show('home');
 })();
 </script>
 </body>
