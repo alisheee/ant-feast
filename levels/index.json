@@ -1,8 +1,7 @@
 [
  {
   "id": "fruits",
-  "name": "Фрукти",
-  "emoji": "🍎",
+  "name": "Fruits",
   "levels": [
    {
     "file": "01_apple.json",
@@ -24,12 +23,12 @@
     "file": "pineapple.json",
     "difficulty": "hard"
    }
-  ]
+  ],
+  "icon": "apple"
  },
  {
   "id": "fastfood",
-  "name": "Фастфуд",
-  "emoji": "🍕",
+  "name": "Fast food",
   "levels": [
    {
     "file": "fries.json",
@@ -51,12 +50,12 @@
     "file": "donut.json",
     "difficulty": "hard"
    }
-  ]
+  ],
+  "icon": "pizza"
  },
  {
   "id": "animals",
-  "name": "Тварини",
-  "emoji": "🐢",
+  "name": "Animals",
   "levels": [
    {
     "file": "cat.json",
@@ -78,12 +77,12 @@
     "file": "03_turtle.json",
     "difficulty": "hard"
    }
-  ]
+  ],
+  "icon": "paw-print"
  },
  {
   "id": "berries",
-  "name": "Ягоди",
-  "emoji": "🍓",
+  "name": "Berries",
   "levels": [
    {
     "file": "strawberry.json",
@@ -105,12 +104,12 @@
     "file": "raspberry.json",
     "difficulty": "hard"
    }
-  ]
+  ],
+  "icon": "cherry"
  },
  {
   "id": "architecture",
-  "name": "Архітектура",
-  "emoji": "🏰",
+  "name": "Architecture",
   "levels": [
    {
     "file": "house.json",
@@ -132,6 +131,7 @@
     "file": "eiffel.json",
     "difficulty": "hard"
    }
-  ]
+  ],
+  "icon": "castle"
  }
 ]
