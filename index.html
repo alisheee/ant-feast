@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Ant Feast</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="css/style.css?v=4">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 <div id="home" class="screen on">
-  <div class="bar top"><button class="btn" id="support"><span data-i="message-circle" data-s="18"></span>Support</button><button class="btn" id="theme" title="Theme"></button></div>
+  <div class="bar top"><button class="btn" id="support"><span data-i="message-circle" data-s="18"></span>Support</button><button class="btn" id="settingsBtn" title="Settings"><span data-i="settings" data-s="20"></span></button></div>
   <div class="logo"><span id="logoIcon"></span>Ant Feast</div>
   <div class="chip" id="hcat"></div>
   <div class="big" id="hnum"></div>
@@ -42,6 +42,16 @@
   <button class="play" id="psave" disabled style="font-size:18px;padding:10px 26px">Save to Personal</button>
   <div class="hint note"><span data-i="lock" data-s="14"></span>The photo is never uploaded: it is processed on your device.</div>
 </div>
+<div id="settings" class="screen">
+  <div class="bar"><button class="btn" id="b4"><span data-i="arrow-left"></span></button><span class="ttl">Settings</span><span class="sp"></span></div>
+  <div class="set">
+    <div class="srow"><span class="sl">Theme</span><div class="seg"><button id="thL"><span data-i="sun" data-s="16"></span>Light</button><button id="thD"><span data-i="moon" data-s="16"></span>Dark</button></div></div>
+    <div class="srow"><span class="sl"><span data-i="music" data-s="20"></span>Music</span><button class="tgl" id="tgM"><i></i></button></div>
+    <input type="range" id="vM" min="0" max="100">
+    <div class="srow"><span class="sl"><span data-i="volume-2" data-s="20"></span>Sound effects</span><button class="tgl" id="tgS"><i></i></button></div>
+    <input type="range" id="vS" min="0" max="100">
+  </div>
+</div>
 <div id="ants"></div>
 <div id="ov"><div class="box"><div id="msg" style="font-size:20px;font-weight:700"></div><div id="sub2"></div><button class="btn" id="act"></button><button class="btn" id="act2">Menu</button></div></div>
 <div id="sup"><div class="box">
@@ -51,11 +61,13 @@
   <div class="row2"><button class="btn" data-chat><span data-i="bug" data-s="16"></span>Report a bug</button><button class="btn" data-chat><span data-i="lightbulb" data-s="16"></span>Suggest an idea</button></div>
 </div></div>
 
-<script src="js/core.js?v=4"></script>
-<script src="js/icons.js?v=4"></script>
-<script src="js/game.js?v=4"></script>
-<script src="js/menu.js?v=4"></script>
-<script src="js/personal.js?v=4"></script>
-<script src="js/main.js?v=4"></script>
+<script src="js/core.js?v=7"></script>
+<script src="js/icons.js?v=7"></script>
+<script src="js/audio.js?v=7"></script>
+<script src="js/game.js?v=7"></script>
+<script src="js/menu.js?v=7"></script>
+<script src="js/personal.js?v=7"></script>
+<script src="js/settings.js?v=7"></script>
+<script src="js/main.js?v=7"></script>
 </body>
 </html>

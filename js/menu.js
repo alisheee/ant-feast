@@ -2,7 +2,7 @@
 // Підключається звичайним <script> (див. index.html): порядок файлів важливий, змінні спільні.
 
 // ---- меню, каталог, рівні ----
-const show=id=>document.querySelectorAll('.screen').forEach(e=>{if(e.parentElement===document.body)e.classList.toggle('on',e.id===id)});
+const show=id=>{setTrack(id==='game'?'game':'menu');document.querySelectorAll('.screen').forEach(e=>{if(e.parentElement===document.body)e.classList.toggle('on',e.id===id)})};
 const doneOf=c=>Math.min(PROG.done[c.id]||0,c.levels.length);
 const curCat=()=>CATS.find(c=>c.id===PROG.cat&&c.levels.length)||CATS.find(c=>c.levels.length);
 const conv=d=>{const pal={};d.palette.forEach((h,i)=>pal[String.fromCharCode(97+i)]=h);

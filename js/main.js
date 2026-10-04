@@ -4,7 +4,12 @@
 $('play').onclick=()=>{const c=curCat();playLevel(c,Math.min(doneOf(c),c.levels.length-1))};
 $('tocat').onclick=()=>{renderCatalog();show('catalog')};
 $('b1').onclick=goHome;$('b2').onclick=()=>{renderCatalog();show('catalog')};
-$('gback').onclick=goHome;$('theme').onclick=toggleTheme;
+$('gback').onclick=goHome;$('settingsBtn').onclick=()=>{renderSettings();show('settings')};$('b4').onclick=goHome;
+$('thL').onclick=()=>{setTheme('light');renderSettings()};$('thD').onclick=()=>{setTheme('dark');renderSettings()};
+$('tgM').onclick=()=>{const s=settings();s.music=!s.music;saveProg();syncMusic();renderSettings()};
+$('tgS').onclick=()=>{const s=settings();s.sfx=!s.sfx;saveProg();renderSettings()};
+$('vM').oninput=e=>{settings().mv=e.target.value/100;applyVolumes()};$('vM').onchange=saveProg;
+$('vS').oninput=e=>{settings().sv=e.target.value/100;applyVolumes()};$('vS').onchange=()=>{saveProg();sfx('click')};
 const CHAT='https://t.me/pyataczka';
 $('support').onclick=()=>{$('sup').style.display='flex'};$('supx').onclick=()=>{$('sup').style.display='none'};
 document.querySelectorAll('[data-chat]').forEach(b=>b.onclick=()=>{tg&&tg.openTelegramLink?tg.openTelegramLink(CHAT):window.open(CHAT,'_blank')});

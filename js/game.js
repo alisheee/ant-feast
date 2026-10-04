@@ -106,35 +106,57 @@ function route(D,tx,ty){
   return out.reverse();
 }
 const ANT='<svg viewBox="0 0 14 24" width="100%" height="100%"><g stroke="#1b1b1b" stroke-width="0.9" stroke-linecap="round"><path fill="none" d="M5.8 3L3.6 0.6M8.2 3L10.4 0.6M6.8 9L1.8 6.4M6.8 11L1.2 11.6M6.8 13L2.2 17.6M7.2 9L12.2 6.4M7.2 11L12.8 11.6M7.2 13L11.8 17.6"/><ellipse cx="7" cy="18.2" rx="3.4" ry="4.8" fill="COL"/><ellipse cx="7" cy="10.8" rx="2.4" ry="3" fill="COL"/><ellipse cx="7" cy="5.2" rx="2.7" ry="2.4" fill="COL"/></g></svg>';
+// animate element e along pts (screen px); the ant turns toward its direction of travel
+function walk(e,pts,speed){
+  const st=pts[0],cum=[0],A=[];
+  for(let i=1;i<pts.length;i++){
+    const dx=pts[i][0]-pts[i-1][0],dy=pts[i][1]-pts[i-1][1],d=Math.hypot(dx,dy);cum.push(cum[i-1]+d);
+    let g=d<0.01?(A.length?A[A.length-1]:0):Math.atan2(dy,dx)*180/Math.PI+90;
+    if(A.length){const p=A[A.length-1];while(g-p>180)g-=360;while(g-p<-180)g+=360}
+    A.push(g);
+  }
+  const total=cum[cum.length-1]||1,fr=[];
+  pts.forEach((p,i)=>{
+    const off=cum[i]/total,tr=`translate(${p[0]-st[0]}px,${p[1]-st[1]}px)`;
+    if(i>0)fr.push({transform:`${tr} rotate(${A[i-1]}deg)`,offset:off});
+    fr.push({transform:`${tr} rotate(${A[Math.min(i,A.length-1)]}deg)`,offset:off});
+  });
+  return e.animate(fr,{duration:total/speed,easing:'linear',fill:'both'});
+}
 function sendAnt(si,[x,y],c,D){
   S.res.add(y*S.W+x);S.ants++;
   const a=slotEls[si].getBoundingClientRect(),c0=cellEls[0].getBoundingClientRect(),c1=cellEls[1].getBoundingClientRect(),cw=cellEls[S.W].getBoundingClientRect();
   const ox=c0.left+c0.width/2,oy=c0.top+c0.height/2,sx=c1.left-c0.left,sy=cw.top-c0.top;
   const P=(i,k)=>[ox+i*sx,oy+k*sy],st=[a.left+a.width/2,a.top+a.height/2];
   const pts=[st,...route(D,x,y).map(([i,k])=>P(i,k)),P(x,y)];
-  const cum=[0],A=[];
-  for(let i=1;i<pts.length;i++){
-    const dx=pts[i][0]-pts[i-1][0],dy=pts[i][1]-pts[i-1][1];cum.push(cum[i-1]+Math.hypot(dx,dy));
-    let g=Math.hypot(dx,dy)<0.01?(A.length?A[A.length-1]:0):Math.atan2(dy,dx)*180/Math.PI+90;
-    if(A.length){const p=A[A.length-1];while(g-p>180)g-=360;while(g-p<-180)g+=360}
-    A.push(g);
-  }
-  const total=cum[cum.length-1]||1,sz=Math.max(18,Math.min(32,sx*3.4)),aw=sz*0.58;
+  const sz=Math.max(8,sx*1.4),aw=sz*0.58;   // a bit bigger than one picture pixel
   const e=document.createElement('div');e.className='ant';
   e.style.cssText=`left:${st[0]}px;top:${st[1]}px;width:${aw}px;height:${sz}px;margin:${-sz/2}px 0 0 ${-aw/2}px`;
   e.innerHTML=ANT.replace(/COL/g,CUR[c]);$('ants').appendChild(e);
-  const fr=[];
-  pts.forEach((p,i)=>{
-    const off=cum[i]/total,tr=`translate(${p[0]-st[0]}px,${p[1]-st[1]}px)`;
-    if(i>0)fr.push({transform:`${tr} rotate(${A[i-1]}deg)`,offset:off});
-    fr.push({transform:`${tr} rotate(${A[Math.min(i,A.length-1)]}deg)`,offset:off});
-  });
-  const an=e.animate(fr,{duration:total/S.speed,easing:'linear',fill:'both'});
-  an.onfinish=()=>{
-    e.remove();S.g[y][x]=null;S.res.delete(y*S.W+x);S.ants--;S.left--;
+  walk(e,pts,S.speed).onfinish=()=>{
+    S.g[y][x]=null;S.res.delete(y*S.W+x);S.ants--;S.left--;
     const cell=cellEls[y*S.W+x];cell.style.background='';cell.className='';
-    check();
+    leave(e,x,y,P);check();
   };
+}
+// after eating its pixel the ant walks over empty cells to the top or a side of the screen and disappears
+function leave(e,x,y,P){
+  const W=S.W,H=S.H,D2=bfs(S.g,W,H,x,y);let best=null,bd=1e9;
+  for(let i=-1;i<=W;i++)for(let k=-1;k<H;k++){
+    if(i>=0&&i<W&&k>=0)continue;                      // only the outer ring, never the bottom row
+    const d=D2[idx2(W,i,k)];if(d>=0&&d<bd){bd=d;best=[i,k]}}
+  const here=P(x,y),path=[here];let fin=[here[0],-30];
+  if(best){
+    const cells=[best];let[cx,cy]=best,d=bd;
+    while(d>0){for(const[dx,dy]of N4){const a=cx+dx,b=cy+dy;if(a<-1||b<-1||a>W||b>H)continue;if(D2[idx2(W,a,b)]===d-1){cx=a;cy=b;break}}cells.push([cx,cy]);d--}
+    cells.reverse().slice(1).forEach(([i,k])=>path.push(P(i,k)));
+    const end=P(best[0],best[1]);
+    fin=best[1]===-1?[end[0],-30]:best[0]===-1?[-30,end[1]]:[innerWidth+30,end[1]];
+  }
+  path.push(fin);
+  e.getAnimations().forEach(an=>an.cancel());
+  e.style.left=here[0]+'px';e.style.top=here[1]+'px';
+  walk(e,path,S.speed*1.5).onfinish=()=>e.remove();
 }
 function canMove(t,i){return pick(t.c,dists(slotCx(i)))!==null}
 function check(){
@@ -144,7 +166,7 @@ function check(){
   if(!moving&&!(S.slots.includes(null)&&S.cols.some(c=>c.length)))end(false);
 }
 function end(win){
-  S.over=true;clearInterval(TICK);const n=cat.levels.length;
+  S.over=true;clearInterval(TICK);sfx(win?'win':'lose');const n=cat.levels.length;
   if(win){PROG.done[cat.id]=Math.max(doneOf(cat),idx+1);saveProg()}
   const next=win&&idx+1<n,hide=()=>{$('ov').style.display='none'};
   $('msg').textContent=win?'All eaten!':'Slots jammed';

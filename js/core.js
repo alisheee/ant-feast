@@ -1,7 +1,7 @@
 // core.js: допоміжні функції, спільний стан, Telegram, збереження прогресу
 // Підключається звичайним <script> (див. index.html): порядок файлів важливий, змінні спільні.
 
-const VER='3';
+const VER='7';
 const $=id=>document.getElementById(id),N4=[[1,0],[-1,0],[0,1],[0,-1]];
 const DIFF={easy:{type:'easy',slots:6,cols:3,min:2,max:5},mid:{type:'medium',slots:5,cols:4,min:2,max:6},hard:{type:'HARD',slots:4,cols:5,min:3,max:8}};
 let CATS=[],CACHE={},PROG={cat:null,done:{}},CUR={},S,cat,idx=0,cellEls=[],slotEls=[];
@@ -18,5 +18,5 @@ function loadProg(){return new Promise(res=>{const f=v=>{try{if(v)PROG=JSON.pars
 
 // ---- theme (light/dark), remembered in progress ----
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==='dark':!!(window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches)};
-function applyTheme(){if(PROG.theme)document.documentElement.dataset.theme=PROG.theme;const b=$('theme');if(b)b.innerHTML=icon(isDark()?'sun':'moon',20)}
-function toggleTheme(){PROG.theme=isDark()?'light':'dark';saveProg();applyTheme()}
+function applyTheme(){if(PROG.theme)document.documentElement.dataset.theme=PROG.theme}
+function setTheme(t){PROG.theme=t;saveProg();applyTheme()}
