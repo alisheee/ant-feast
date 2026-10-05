@@ -4,9 +4,10 @@
 $('play').onclick=()=>{const c=curCat();playLevel(c,Math.min(doneOf(c),c.levels.length-1))};
 $('tocat').onclick=()=>{renderCatalog();show('catalog')};
 $('b1').onclick=goHome;$('b2').onclick=()=>{renderCatalog();show('catalog')};
-$('gback').onclick=goHome;$('settingsBtn').onclick=()=>{renderSettings();show('settings')};$('b4').onclick=goHome;
+$('gback').onclick=goHome;$('settingsBtn').onclick=openSettings;$('gset').onclick=openSettings;$('b4').onclick=closeSettings;$('settings').onclick=e=>{if(e.target.id==='settings')closeSettings()};
 $('thL').onclick=()=>{setTheme('light');renderSettings()};$('thD').onclick=()=>{setTheme('dark');renderSettings()};
 $('tgM').onclick=()=>{const s=settings();s.music=!s.music;saveProg();syncMusic();renderSettings()};
+$('tgV').onclick=()=>{const s=settings();s.vib=!s.vib;saveProg();renderSettings();buzz('light')};
 $('tgS').onclick=()=>{const s=settings();s.sfx=!s.sfx;saveProg();renderSettings()};
 $('vM').oninput=e=>{settings().mv=e.target.value/100;applyVolumes()};$('vM').onchange=saveProg;
 $('vS').oninput=e=>{settings().sv=e.target.value/100;applyVolumes()};$('vS').onchange=()=>{saveProg();sfx('click')};
@@ -24,5 +25,5 @@ $('logoIcon').innerHTML=ANT.replace(/COL/g,'#e53935').replace('width="100%" heig
 (async()=>{
   try{CATS=await(await fetch('levels/index.json?v='+VER)).json()}
   catch(e){document.body.textContent='Could not load levels';return}
-  await loadProg();applyTheme();await loadPersonal();renderHome();show('home');
+  await loadProg();applyTheme();AU.ready=true;applyVolumes();syncMusic();await loadPersonal();renderHome();show('home');
 })();

@@ -2,7 +2,7 @@
 // Підключається звичайним <script> (див. index.html): порядок файлів важливий, змінні спільні.
 
 // ---- особисті фото: сховище, перетворення фото на піксельну сітку ----
-const MAXP=10,TOL=40;
+const MAXP=10;
 const kvSet=(k,v)=>new Promise(r=>{try{useTg()?tg.CloudStorage.setItem(k,v,()=>r()):(localStorage.setItem(k,v),r())}catch(e){r()}});
 const kvGet=k=>new Promise(r=>{try{useTg()?tg.CloudStorage.getItem(k,(e,v)=>r(v||null)):r(localStorage.getItem(k))}catch(e){r(null)}});
 const kvDel=k=>new Promise(r=>{try{useTg()?tg.CloudStorage.removeItem(k,()=>r()):(localStorage.removeItem(k),r())}catch(e){r()}});
@@ -58,16 +58,8 @@ function pix(img,size,nc){
   const cv=document.createElement('canvas');cv.width=w;cv.height=h;
   const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0,w,h);
   const d=cx.getImageData(0,0,w,h).data,N=w*h,mask=new Uint8Array(N);
-  let hasA=false;for(let i=0;i<N;i++)if(d[i*4+3]<250){hasA=true;break}
-  if(hasA){for(let i=0;i<N;i++)mask[i]=d[i*4+3]>128?1:0}
-  else{
-    const cs=[0,w-1,(h-1)*w,N-1],bg=[0,1,2].map(k=>{const v=cs.map(i=>d[i*4+k]).sort((a,b)=>a-b);return(v[1]+v[2])/2});
-    const sim=i=>Math.abs(d[i*4]-bg[0])+Math.abs(d[i*4+1]-bg[1])+Math.abs(d[i*4+2]-bg[2])<=TOL*1.5+10;
-    const isbg=new Uint8Array(N),q=[],push=i=>{if(!isbg[i]&&sim(i)){isbg[i]=1;q.push(i)}};
-    for(let x=0;x<w;x++){push(x);push((h-1)*w+x)}for(let y=0;y<h;y++){push(y*w);push(y*w+w-1)}
-    while(q.length){const i=q.pop(),x=i%w,y=(i/w)|0;if(x>0)push(i-1);if(x<w-1)push(i+1);if(y>0)push(i-w);if(y<h-1)push(i+w)}
-    for(let i=0;i<N;i++)mask[i]=isbg[i]?0:1;
-  }
+  // only transparent pixels are treated as background; white and every other colour is kept
+  for(let i=0;i<N;i++)mask[i]=d[i*4+3]>128?1:0;
   let x0=w,y0=h,x1=-1,y1=-1;
   for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(mask[y*w+x]){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
   if(x1<0)return null;
@@ -89,7 +81,7 @@ function openUpload(){$('pf').value='';IMG=null;RES=null;$('pv').style.display='
 function upd(){
   $('szv').textContent=$('sz').value;$('ncv').textContent=$('nc').value;if(!IMG)return;
   const d=pix(IMG,+$('sz').value,+$('nc').value);
-  if(!d){RES=null;$('psave').disabled=true;$('pv').style.display='none';$('pinfo').textContent='Could not find an object in the photo. Try another one.';return}
+  if(!d){RES=null;$('psave').disabled=true;$('pv').style.display='none';$('pinfo').textContent='The picture is fully transparent. Try another one.';return}
   RES=d;const cs=Math.max(4,Math.min(14,Math.floor(300/Math.max(d.w,d.h)))),cv=$('pv'),ctx=cv.getContext('2d');
   cv.width=d.w*cs;cv.height=d.h*cs;cv.style.display='block';
   d.pixels.forEach((r,y)=>r.forEach((v,x)=>{if(v>=0){ctx.fillStyle=d.palette[v];ctx.fillRect(x*cs,y*cs,cs-1,cs-1)}}));

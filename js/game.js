@@ -58,17 +58,19 @@ addEventListener('resize',fit);
 function renderCols(){
   const el=$('cols');el.innerHTML='';
   S.cols.forEach((col,ci)=>{
+    if(!col.length)return;   // an emptied column disappears: the rest stay together with equal gaps
     const d=document.createElement('div');d.className='col';
     col.slice(0,3).forEach((t,k)=>{const b=document.createElement('button');b.className='tile'+(k?' lock':'');
       b.textContent=t.n;b.style.background=CUR[t.c];if(t.n>99)b.style.fontSize='13px';if(!k)b.onclick=()=>tap(ci);d.appendChild(b)});
-    if(col.length>3){const m=document.createElement('div');m.className='more';m.textContent='+'+(col.length-3);d.appendChild(m)}
+    for(let k=Math.min(3,col.length);k<3;k++)d.appendChild(document.createElement('div'));   // keep rows at fixed places
+    const m=document.createElement('div');m.className='more';m.textContent=col.length>3?'+'+(col.length-3):'';d.appendChild(m);
     el.appendChild(d)});
 }
 function renderSlots(){S.slots.forEach((t,i)=>{const e=slotEls[i];e.style.background=t?CUR[t.c]:'transparent';e.style.borderStyle=t?'solid':'dashed';e.style.fontSize=t&&t.n>99?'13px':'';e.textContent=t?t.n:''})}
 function tap(ci){
   if(S.over)return;const col=S.cols[ci];if(!col.length)return;
-  const si=S.slots.indexOf(null);if(si<0)return;
-  const t=col.shift();t.next=0;t.iv=t.n<=20?260:Math.max(45,260*20/t.n);
+  const si=S.slots.indexOf(null);if(si<0){buzz('warning');return}   // all slots busy (the 'blocked' sound plays on pointerdown)
+  buzz('light');const t=col.shift();t.next=0;t.iv=t.n<=20?260:Math.max(45,260*20/t.n);
   S.slots[si]=t;renderCols();renderSlots();check();
 }
 function slotCx(si){
@@ -134,7 +136,7 @@ function sendAnt(si,[x,y],c,D){
   e.style.cssText=`left:${st[0]}px;top:${st[1]}px;width:${aw}px;height:${sz}px;margin:${-sz/2}px 0 0 ${-aw/2}px`;
   e.innerHTML=ANT.replace(/COL/g,CUR[c]);$('ants').appendChild(e);
   walk(e,pts,S.speed).onfinish=()=>{
-    S.g[y][x]=null;S.res.delete(y*S.W+x);S.ants--;S.left--;
+    S.g[y][x]=null;S.res.delete(y*S.W+x);S.ants--;S.left--;sfx('eat');
     const cell=cellEls[y*S.W+x];cell.style.background='';cell.className='';
     leave(e,x,y,P);check();
   };
@@ -166,7 +168,7 @@ function check(){
   if(!moving&&!(S.slots.includes(null)&&S.cols.some(c=>c.length)))end(false);
 }
 function end(win){
-  S.over=true;clearInterval(TICK);sfx(win?'win':'lose');const n=cat.levels.length;
+  S.over=true;clearInterval(TICK);sfx(win?'win':'lose');buzz(win?'success':'error');const n=cat.levels.length;
   if(win){PROG.done[cat.id]=Math.max(doneOf(cat),idx+1);saveProg()}
   const next=win&&idx+1<n,hide=()=>{$('ov').style.display='none'};
   $('msg').textContent=win?'All eaten!':'Slots jammed';
@@ -176,4 +178,15 @@ function end(win){
   $('act').onclick=()=>{hide();win?(next?playLevel(cat,idx+1):goHome()):playLevel(cat,idx)};
   $('act2').onclick=()=>{hide();win&&!next?openCat(cat):goHome()};
   $('ov').style.display='flex';
+}
+
+// pause/resume (used while the settings window is open)
+function pauseGame(){
+  if(!S||S.over||S.paused||!$('game').classList.contains('on'))return;
+  S.paused=true;clearInterval(TICK);$('ants').getAnimations({subtree:true}).forEach(a=>a.pause());
+}
+function resumeGame(){
+  if(!S||!S.paused)return;
+  S.paused=false;const n=performance.now();S.slots.forEach(t=>{if(t)t.next=n});
+  TICK=setInterval(tick,40);$('ants').getAnimations({subtree:true}).filter(a=>a.playState==='paused').forEach(a=>a.play());
 }

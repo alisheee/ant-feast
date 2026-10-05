@@ -4,6 +4,9 @@
 function renderSettings(){
   const s=settings(),dk=isDark();
   $('thL').classList.toggle('on',!dk);$('thD').classList.toggle('on',dk);
-  $('tgM').classList.toggle('on',s.music);$('tgS').classList.toggle('on',s.sfx);
+  $('tgM').classList.toggle('on',s.music);$('tgS').classList.toggle('on',s.sfx);$('tgV').classList.toggle('on',s.vib);
   $('vM').value=Math.round(s.mv*100);$('vS').value=Math.round(s.sv*100);
 }
+// Settings open as a window over the current screen; a running game is paused while it is open
+function openSettings(){renderSettings();pauseGame();$('settings').style.display='flex'}
+function closeSettings(){$('settings').style.display='none';resumeGame()}
