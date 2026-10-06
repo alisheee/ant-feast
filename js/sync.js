@@ -18,3 +18,7 @@ function syncNow(event){
 // called whenever progress or settings are saved: send once things have calmed down
 function syncSoon(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow('update'),4000)}
 document.addEventListener('visibilitychange',()=>{if(document.hidden)syncNow('hide')});
+
+window.addEventListener('load',()=>{
+  setTimeout(()=>syncNow('open'),1000);
+});
