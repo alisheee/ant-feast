@@ -9,11 +9,18 @@ function snapshot(event){
   return{event,v:VER,initData:tg.initData,platform:tg.platform||'',tgv:tg.version||'',progress,personal:P?P.levels.length:0,
     music:s.music,sfx:s.sfx,vib:s.vib,mv:s.mv,sv:s.sv,theme:PROG.theme||'light'};
 }
-let syncTimer=0;
+let syncTimer=0,syncStatus=SYNC_URL?'waiting':'off: SYNC_URL is empty in js/config.js';
 function syncNow(event){
   clearTimeout(syncTimer);
-  if(!SYNC_URL||!inTelegram()||!CATS.length)return;
-  try{fetch(SYNC_URL,{method:'POST',mode:'no-cors',keepalive:true,body:JSON.stringify(snapshot(event||'update'))}).catch(()=>{})}catch(e){}
+  if(!SYNC_URL){syncStatus='off: SYNC_URL is empty in js/config.js';return}
+  if(!inTelegram()){syncStatus='off: open the game from the bot (Mini App), not as a plain link';return}
+  if(!CATS.length)return;
+  syncStatus='sending...';
+  try{
+    fetch(SYNC_URL,{method:'POST',keepalive:true,body:JSON.stringify(snapshot(event||'update'))})
+      .then(r=>r.text()).then(t=>{syncStatus=t==='ok'?'ok':'server: '+t})
+      .catch(()=>{syncStatus='sent, no reply (check Apps Script > Executions)'});
+  }catch(e){syncStatus='error: '+e.message}
 }
 // called whenever progress or settings are saved: send once things have calmed down
 function syncSoon(){clearTimeout(syncTimer);syncTimer=setTimeout(()=>syncNow('update'),4000)}
