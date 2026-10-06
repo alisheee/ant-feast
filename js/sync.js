@@ -17,9 +17,10 @@ function syncNow(event){
   if(!CATS.length)return;
   syncStatus='sending...';
   try{
-    fetch(SYNC_URL,{method:'POST',keepalive:true,body:JSON.stringify(snapshot(event||'update'))})
-      .then(r=>r.text()).then(t=>{syncStatus=t==='ok'?'ok':'server: '+t})
-      .catch(()=>{syncStatus='sent, no reply (check Apps Script > Executions)'});
+    const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),15000);
+    fetch(SYNC_URL,{method:'POST',keepalive:event==='hide',signal:ac.signal,body:JSON.stringify(snapshot(event||'update'))})
+      .then(r=>r.text()).then(t=>{clearTimeout(tm);syncStatus=t==='ok'?'ok':'server: '+t})
+      .catch(e=>{clearTimeout(tm);syncStatus=e.name==='AbortError'?'no reply within 15 s (check Apps Script > Executions)':'sent, but the reply is blocked or lost (check Apps Script > Executions)'});
   }catch(e){syncStatus='error: '+e.message}
 }
 // called whenever progress or settings are saved: send once things have calmed down
