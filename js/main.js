@@ -4,6 +4,7 @@
 $('play').onclick=()=>{const c=curCat();playLevel(c,Math.min(doneOf(c),c.levels.length-1))};
 $('tocat').onclick=()=>{renderCatalog();show('catalog')};
 $('b1').onclick=goHome;$('b2').onclick=()=>{renderCatalog();show('catalog')};
+$('profileBtn').onclick=openProfile;$('px').onclick=closeProfile;$('profile').onclick=e=>{if(e.target.id==='profile')closeProfile()};
 $('gback').onclick=goHome;$('settingsBtn').onclick=openSettings;$('gset').onclick=openSettings;$('b4').onclick=closeSettings;$('settings').onclick=e=>{if(e.target.id==='settings')closeSettings()};
 $('thL').onclick=()=>{setTheme('light');renderSettings()};$('thD').onclick=()=>{setTheme('dark');renderSettings()};
 $('tgM').onclick=()=>{const s=settings();s.music=!s.music;saveProg();syncMusic();renderSettings()};
@@ -25,5 +26,5 @@ $('logoIcon').innerHTML=ANT.replace(/COL/g,'#e53935').replace('width="100%" heig
 (async()=>{
   try{CATS=await(await fetch('levels/index.json?v='+VER)).json()}
   catch(e){document.body.textContent='Could not load levels';return}
-  await loadProg();applyTheme();AU.ready=true;applyVolumes();syncMusic();await loadPersonal();renderHome();show('home');
+  await loadProg();applyTheme();AU.ready=true;applyVolumes();syncMusic();await loadPersonal();renderHome();show('home');syncNow('open');
 })();

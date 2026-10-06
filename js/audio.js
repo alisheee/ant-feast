@@ -58,7 +58,8 @@ function buzz(kind){
 // button sounds: tile pick, restart button and a generic click for everything else
 document.addEventListener('pointerdown',e=>{
   const b=e.target.closest&&e.target.closest('button,label.btn,.card,.lv');
-  if(!b||b.disabled||b.classList.contains('lock'))return;
+  if(!b||b.disabled)return;
+  if(b.classList.contains('lock')){if(b.classList.contains('tile')){sfx('blocked');buzz('warning')}return}   // greyed tile: only the 'blocked' sound
   const full=S&&!S.over&&!S.slots.includes(null);   // every slot is busy: the tile cannot be taken
   sfx(b.classList.contains('tile')?(full?'blocked':'tile'):b.id==='restart'?'retry':'click');
 },true);
