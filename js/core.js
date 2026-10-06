@@ -1,7 +1,7 @@
 // core.js: допоміжні функції, спільний стан, Telegram, збереження прогресу
 // Підключається звичайним <script> (див. index.html): порядок файлів важливий, змінні спільні.
 
-const VER='13';
+const VER='14';
 const $=id=>document.getElementById(id),N4=[[1,0],[-1,0],[0,1],[0,-1]];
 const DIFF={easy:{type:'easy',slots:5,cols:3,min:2,max:5},mid:{type:'medium',slots:5,cols:4,min:2,max:6},hard:{type:'HARD',slots:5,cols:5,min:3,max:8}};
 let CATS=[],CACHE={},PROG={cat:null,done:{}},CUR={},S,cat,idx=0,cellEls=[],slotEls=[];

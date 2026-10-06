@@ -3,7 +3,6 @@
 
 const tgUser=()=>(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user)||null;
 function renderProfile(){
-  $('pSync').textContent='Sync status: '+syncStatus+' · game v'+VER;
   const u=tgUser(),name=u?[u.first_name,u.last_name].filter(Boolean).join(' '):'Guest';
   $('pName').textContent=name||'Player';
   $('pUser').textContent=u?(u.username?'@'+u.username:'ID '+u.id):'Open the game in Telegram to see your account';
