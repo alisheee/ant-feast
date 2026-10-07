@@ -11,11 +11,7 @@ function renderProfile(){
   else av.textContent=(name[0]||'?').toUpperCase();
   const box=$('pStats');box.innerHTML='';
   let done=0,total=0;
-  CATS.filter(c=>!c.personal&&c.levels.length).forEach(c=>{
-    const d=doneOf(c),n=c.levels.length;done+=d;total+=n;
-    const r=document.createElement('div');r.className='prow';
-    r.innerHTML=`<span class="em">${icon(c.icon,20)}</span><span class="ct"><b></b><i><u style="width:${d/n*100}%"></u></i></span><span>${d}/${n}</span>`;
-    r.querySelector('b').textContent=c.name;box.appendChild(r)});
+  CATS.filter(c=>!c.personal&&c.levels.length).forEach(c=>{done+=doneOf(c);total+=c.levels.length});
   const P=persCat(),h=document.createElement('div');h.className='ptot';
   h.textContent=`Levels completed: ${done}/${total}`+(P?` · Your photos: ${P.levels.length}`:'');
   box.prepend(h);

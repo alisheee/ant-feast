@@ -74,3 +74,4 @@ input[type=range]{accent-color:var(--ac)}
 .pnote{width:auto;text-align:left}
 #profile .box{box-sizing:border-box;width:min(88vw,340px)}
 .ptot{font-size:14px}
+#pdel{color:var(--ac)}

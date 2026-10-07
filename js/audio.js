@@ -49,9 +49,10 @@ function sfx(name){
 // light vibration: Telegram haptics inside Telegram, the browser Vibration API elsewhere (can be switched off in settings)
 function buzz(kind){
   if(!settings().vib)return;
+  if(kind==='tick'){const now=performance.now();if(now-(LAST.tick||0)<90)return;LAST.tick=now}   // pixel eaten: very light, at most every 90 ms
   try{
-    if(tg&&tg.initData&&tg.HapticFeedback){kind==='light'?tg.HapticFeedback.impactOccurred('light'):tg.HapticFeedback.notificationOccurred(kind)}
-    else if(navigator.vibrate)navigator.vibrate(kind==='light'?10:kind==='success'?[15,40,15]:25);
+    if(tg&&tg.initData&&tg.HapticFeedback){kind==='tick'?tg.HapticFeedback.impactOccurred('soft'):kind==='light'?tg.HapticFeedback.impactOccurred('light'):tg.HapticFeedback.notificationOccurred(kind)}
+    else if(navigator.vibrate)navigator.vibrate(kind==='tick'?6:kind==='light'?10:kind==='success'?[15,40,15]:25);
   }catch(e){}
 }
 ['pointerdown','click','touchend'].forEach(ev=>document.addEventListener(ev,unlock,true));

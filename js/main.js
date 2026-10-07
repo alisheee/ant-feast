@@ -13,6 +13,7 @@ $('tgS').onclick=()=>{const s=settings();s.sfx=!s.sfx;saveProg();renderSettings(
 $('vM').oninput=e=>{settings().mv=e.target.value/100;applyVolumes()};$('vM').onchange=saveProg;
 $('vS').oninput=e=>{settings().sv=e.target.value/100;applyVolumes()};$('vS').onchange=()=>{saveProg();sfx('click')};
 const CHAT='https://t.me/pyataczka';
+$('pdel').onclick=e=>{if(tg&&tg.openTelegramLink){e.preventDefault();tg.openTelegramLink('https://t.me/pyataczka')}};
 $('support').onclick=()=>{$('sup').style.display='flex'};$('supx').onclick=()=>{$('sup').style.display='none'};
 document.querySelectorAll('[data-chat]').forEach(b=>b.onclick=()=>{tg&&tg.openTelegramLink?tg.openTelegramLink(CHAT):window.open(CHAT,'_blank')});
 $('restart').onclick=()=>playLevel(cat,idx);

@@ -2,6 +2,7 @@
 // Plain <script>, shared globals: load order matters (see index.html).
 
 let TICK=0;
+const ANT_SPEED=0.17;   // px per ms, the same for every ant on every level (and when leaving)
 const idx2=(W,x,y)=>(y+1)*(W+2)+(x+1);
 // BFS over empty cells (outside the picture counts as empty). Returns step distances, -1 = unreachable.
 function bfs(g,W,H,sx,sy){
@@ -35,7 +36,7 @@ function build(L){
 }
 function startGame(L){
   const b=build(L);CUR=L.pal;
-  S={g:b.g,W:b.W,H:b.H,cols:b.cols,slots:Array(L.slots).fill(null),res:new Set(),ants:0,left:b.total,over:false,speed:0.17*Math.max(1,Math.min(3,b.total/800))};
+  S={g:b.g,W:b.W,H:b.H,cols:b.cols,slots:Array(L.slots).fill(null),res:new Set(),ants:0,left:b.total,over:false,speed:ANT_SPEED};
   clearInterval(TICK);TICK=setInterval(tick,40);
   $('title').innerHTML=`${icon(cat.icon,18)}<span>${idx+1}/${cat.levels.length} · ${L.type}</span>`;
   $('ov').style.display='none';$('ants').innerHTML='';
@@ -136,7 +137,7 @@ function sendAnt(si,[x,y],c,D){
   e.style.cssText=`left:${st[0]}px;top:${st[1]}px;width:${aw}px;height:${sz}px;margin:${-sz/2}px 0 0 ${-aw/2}px`;
   e.innerHTML=ANT.replace(/COL/g,CUR[c]);$('ants').appendChild(e);
   walk(e,pts,S.speed).onfinish=()=>{
-    S.g[y][x]=null;S.res.delete(y*S.W+x);S.ants--;S.left--;sfx('eat');
+    S.g[y][x]=null;S.res.delete(y*S.W+x);S.ants--;S.left--;sfx('eat');buzz('tick');
     const cell=cellEls[y*S.W+x];cell.style.background='';cell.className='';
     leave(e,x,y,P);check();
   };
@@ -158,7 +159,7 @@ function leave(e,x,y,P){
   path.push(fin);
   e.getAnimations().forEach(an=>an.cancel());
   e.style.left=here[0]+'px';e.style.top=here[1]+'px';
-  walk(e,path,S.speed*1.5).onfinish=()=>e.remove();
+  walk(e,path,S.speed).onfinish=()=>e.remove();
 }
 function canMove(t,i){return pick(t.c,dists(slotCx(i)))!==null}
 function check(){
